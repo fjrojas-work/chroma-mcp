@@ -1,4 +1,4 @@
-from typing import Dict, List, TypedDict, Union
+from typing import Dict, List, Optional, TypedDict, Union
 from enum import Enum
 import chromadb
 from mcp.server.fastmcp import FastMCP
@@ -14,7 +14,7 @@ from typing_extensions import TypedDict
 
 
 from chromadb.api.collection_configuration import (
-    CreateCollectionConfiguration
+    CreateCollectionConfiguration, CreateHNSWConfiguration, UpdateHNSWConfiguration, UpdateCollectionConfiguration
     )
 from chromadb.api import EmbeddingFunction
 from chromadb.utils.embedding_functions import (
@@ -182,34 +182,78 @@ mcp_known_embedding_functions: Dict[str, EmbeddingFunction] = {
 async def chroma_create_collection(
     collection_name: str,
     embedding_function_name: str = "default",
-    embedding_function_config: Dict | None = None,
-    metadata: Dict | None = None,
+    embedding_function_config: Optional[Dict] = None,
+    metadata: Optional[Dict] = None,
+    space: Optional[str] = None,
+    ef_construction: Optional[int] = None,
+    ef_search: Optional[int] = None,
+    max_neighbors: Optional[int] = None,
+    num_threads: Optional[int] = None,
+    batch_size: Optional[int] = None,
+    sync_threshold: Optional[int] = None,
+    resize_factor: Optional[float] = None,
 ) -> str:
-    """Create a new Chroma collection with configurable embedding functions.
+    """Create a new Chroma collection with configurable embedding functions and HNSW parameters.
     
     Args:
         collection_name: Name of the collection to create
         embedding_function_name: Name of the embedding function to use. Options: 'default', 'cohere', 'openai', 'jina', 'voyageai', 'ollama', 'roboflow'
         embedding_function_config: Optional configuration dict for the embedding function. 
-            For ollama: {"url": "http://localhost:11434", "model_name": "chroma/all-minilm-l6-v2-f32", "timeout": 60}
+            For ollama: {"url": "http://localhost:11434", "model_name": "nomic-embed-text"}
             For openai: {"api_key": "your-api-key", "model": "text-embedding-ada-002"}
             For other functions, check their respective documentation.
         metadata: Optional metadata dict to add to the collection
+        space: Distance function used in HNSW index. Options: 'l2', 'ip', 'cosine'
+        ef_construction: Size of the dynamic candidate list for constructing the HNSW graph
+        ef_search: Size of the dynamic candidate list for searching the HNSW graph
+        max_neighbors: Maximum number of neighbors to consider during HNSW graph construction
+        num_threads: Number of threads to use during HNSW construction
+        batch_size: Number of elements to batch together during index construction
+        sync_threshold: Number of elements to process before syncing index to disk
+        resize_factor: Factor to resize the index by when it's full
     """
     client = get_chroma_client()
     
-    embedding_function_class = mcp_known_embedding_functions[embedding_function_name]
-    
-    # Create embedding function with configuration if provided
+    # Handle embedding function configuration
     if embedding_function_config:
+        # Import OllamaEmbeddingFunction if needed
+        from chromadb.utils.embedding_functions import OllamaEmbeddingFunction
+        
         # Remove non-constructor parameters from config
         clean_config = {k: v for k, v in embedding_function_config.items() 
                        if k not in ['embedding_function']}
-        embedding_function = embedding_function_class(**clean_config)
+        
+        if embedding_function_name == "ollama":
+            embedding_function = OllamaEmbeddingFunction(**clean_config)
+        else:
+            # For other embedding functions, use the standard approach
+            embedding_function_class = mcp_known_embedding_functions.get(embedding_function_name, DefaultEmbeddingFunction)
+            embedding_function = embedding_function_class(**clean_config)
     else:
+        embedding_function_class = mcp_known_embedding_functions.get(embedding_function_name, DefaultEmbeddingFunction)
         embedding_function = embedding_function_class()
     
+    hnsw_config = CreateHNSWConfiguration()
+    if space:
+        hnsw_config["space"] = space
+    if ef_construction:
+        hnsw_config["ef_construction"] = ef_construction
+    if ef_search:
+        hnsw_config["ef_search"] = ef_search
+    if max_neighbors:
+        hnsw_config["max_neighbors"] = max_neighbors
+    if num_threads:
+        hnsw_config["num_threads"] = num_threads
+    if batch_size:
+        hnsw_config["batch_size"] = batch_size
+    if sync_threshold:
+        hnsw_config["sync_threshold"] = sync_threshold
+    if resize_factor:
+        hnsw_config["resize_factor"] = resize_factor
+        
+    
     configuration=CreateCollectionConfiguration(
+        hnsw=hnsw_config,
         embedding_function=embedding_function
     )
     
