@@ -283,6 +283,13 @@ async def chroma_peek_collection(
     try:
         collection = client.get_collection(collection_name)
         results = collection.peek(limit=limit)
+        
+        # Convert numpy arrays to lists for JSON serialization
+        if 'embeddings' in results and results['embeddings'] is not None:
+            # Convert each numpy array to list
+            results['embeddings'] = [emb.tolist() if hasattr(emb, 'tolist') else emb 
+                                   for emb in results['embeddings']]
+        
         return results
     except Exception as e:
         raise Exception(f"Failed to peek collection '{collection_name}': {str(e)}") from e
@@ -303,6 +310,11 @@ async def chroma_get_collection_info(collection_name: str) -> Dict:
         
         # Peek at a few documents
         peek_results = collection.peek(limit=3)
+        
+        # Convert numpy arrays to lists for JSON serialization
+        if 'embeddings' in peek_results and peek_results['embeddings'] is not None:
+            peek_results['embeddings'] = [emb.tolist() if hasattr(emb, 'tolist') else emb 
+                                        for emb in peek_results['embeddings']]
         
         # Get collection metadata and configuration info
         collection_metadata = collection.metadata
@@ -503,13 +515,21 @@ async def chroma_query_documents(
     client = get_chroma_client()
     try:
         collection = client.get_collection(collection_name)
-        return collection.query(
+        results = collection.query(
             query_texts=query_texts,
             n_results=n_results,
             where=where,
             where_document=where_document,
             include=include
         )
+        
+        # Convert numpy arrays to lists for JSON serialization
+        if 'embeddings' in results and results['embeddings'] is not None:
+            results['embeddings'] = [[emb.tolist() if hasattr(emb, 'tolist') else emb 
+                                    for emb in emb_list] 
+                                   for emb_list in results['embeddings']]
+        
+        return results
     except Exception as e:
         raise Exception(f"Failed to query documents from collection '{collection_name}': {str(e)}") from e
 
@@ -552,7 +572,7 @@ async def chroma_get_documents(
     client = get_chroma_client()
     try:
         collection = client.get_collection(collection_name)
-        return collection.get(
+        results = collection.get(
             ids=ids,
             where=where,
             where_document=where_document,
@@ -560,6 +580,13 @@ async def chroma_get_documents(
             limit=limit,
             offset=offset
         )
+        
+        # Convert numpy arrays to lists for JSON serialization
+        if 'embeddings' in results and results['embeddings'] is not None:
+            results['embeddings'] = [emb.tolist() if hasattr(emb, 'tolist') else emb 
+                                   for emb in results['embeddings']]
+        
+        return results
     except Exception as e:
         raise Exception(f"Failed to get documents from collection '{collection_name}': {str(e)}") from e
 
