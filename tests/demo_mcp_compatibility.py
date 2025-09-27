@@ -74,6 +74,17 @@ Configure your embedding server:
 Run the function validation:
   python tests/demo_mcp_compatibility.py
 
+COPY-PASTE READY COMMANDS:
+==========================
+# Remote Ollama server (most common):
+export OLLAMA_URL="http://10.0.0.100:11434" && export OLLAMA_MODEL="nomic-embed-text" && python tests/demo_mcp_compatibility.py
+
+# Local Ollama server:
+export OLLAMA_URL="http://localhost:11434" && export OLLAMA_MODEL="nomic-embed-text" && python tests/demo_mcp_compatibility.py
+
+# Different embedding model:
+export OLLAMA_URL="http://10.0.0.100:11434" && export OLLAMA_MODEL="all-minilm" && python tests/demo_mcp_compatibility.py
+
 Expected Results:
 - Direct connection to Ollama server ✅
 - Function creates collection with OllamaEmbeddingFunction ✅

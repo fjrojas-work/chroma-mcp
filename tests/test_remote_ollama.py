@@ -1,19 +1,79 @@
 #!/usr/bin/env python3
 """
+REMOTE OLLAMA EMBEDDING FUNCTION - TECHNICAL ANALYSIS TEST
+==========================================================
+
 Test to verify that embedding functions with Ollama work correctly
-with a remote server. This test demonstrates:
+with a remote server. This test provides detailed technical analysis:
 
-1. Connectivity with remote Ollama
-2. Collection creation with custom configuration
-3. Document addition using remote embeddings
-4. Queries with semantically correct results
+1. 🔗 CONNECTIVITY VERIFICATION
+   - Remote Ollama server connectivity check
+   - Available models listing and validation
+   - Embedding model detection
 
-Usage:
-    python tests/test_remote_ollama.py
+2. 🏗️ COLLECTION CREATION WITH CUSTOM EMBEDDING
+   - Collection creation with OllamaEmbeddingFunction
+   - Custom configuration parameter handling
+   - Embedding function replacement validation
 
-Configuration:
-    - Modify OLLAMA_URL for your Ollama server
-    - Modify MODEL_NAME if using a different model
+3. 🧮 DETAILED EMBEDDING ANALYSIS
+   - Document processing with remote embeddings
+   - Vector dimension and range analysis
+   - Embedding comparison (stored vs direct)
+   - Statistical analysis of generated vectors
+
+4. 🔍 SEMANTIC SEARCH VALIDATION
+   - Query processing with custom embeddings
+   - Similarity score analysis
+   - Multi-category document testing
+
+USAGE:
+======
+Configure your Ollama server (required):
+  export OLLAMA_URL="http://your-server-ip:11434"
+  export OLLAMA_MODEL="nomic-embed-text"
+
+Run the technical analysis test:
+  python tests/test_remote_ollama.py
+
+COPY-PASTE READY COMMANDS:
+==========================
+# Remote Ollama server (most common):
+export OLLAMA_URL="http://10.0.0.100:11434" && export OLLAMA_MODEL="nomic-embed-text" && python tests/test_remote_ollama.py
+
+# Local Ollama server:
+export OLLAMA_URL="http://localhost:11434" && export OLLAMA_MODEL="nomic-embed-text" && python tests/test_remote_ollama.py
+
+# Different embedding model (if available):
+export OLLAMA_URL="http://10.0.0.100:11434" && export OLLAMA_MODEL="all-minilm" && python tests/test_remote_ollama.py
+
+# Quick test with default local setup:
+export OLLAMA_URL="http://localhost:11434" && export OLLAMA_MODEL="nomic-embed-text" && cd /path/to/chroma-mcp && python tests/test_remote_ollama.py
+
+EXAMPLE EXECUTION:
+==================
+# For remote server at 10.0.0.100:
+export OLLAMA_URL="http://10.0.0.100:11434"
+export OLLAMA_MODEL="nomic-embed-text"
+python tests/test_remote_ollama.py
+
+# For local Ollama:
+export OLLAMA_URL="http://localhost:11434"
+export OLLAMA_MODEL="nomic-embed-text"  
+python tests/test_remote_ollama.py
+
+EXPECTED RESULTS:
+=================
+✅ Ollama connectivity verification
+✅ Collection creation with custom OllamaEmbeddingFunction
+✅ 5 documents processed with 768-dimensional embeddings
+✅ Detailed vector analysis (dimensions, ranges, norms)
+✅ Embedding comparison validation (stored = direct)
+✅ Semantic search queries with similarity scores
+✅ Multi-category document testing (AI, programming, database, tools)
+
+This test complements demo_mcp_compatibility.py by providing deep
+technical analysis of the embedding generation and storage process.
 """
 
 import asyncio
