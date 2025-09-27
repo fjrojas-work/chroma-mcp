@@ -23,6 +23,7 @@ from chromadb.utils.embedding_functions import (
     OpenAIEmbeddingFunction,
     JinaEmbeddingFunction,
     VoyageAIEmbeddingFunction,
+    OllamaEmbeddingFunction,
     RoboflowEmbeddingFunction,
 )
 
@@ -174,27 +175,39 @@ mcp_known_embedding_functions: Dict[str, EmbeddingFunction] = {
     "openai": OpenAIEmbeddingFunction,
     "jina": JinaEmbeddingFunction,
     "voyageai": VoyageAIEmbeddingFunction,
+    "ollama": OllamaEmbeddingFunction,
     "roboflow": RoboflowEmbeddingFunction,
 }
 @mcp.tool()
 async def chroma_create_collection(
     collection_name: str,
     embedding_function_name: str = "default",
+    embedding_function_config: Dict | None = None,
     metadata: Dict | None = None,
 ) -> str:
-    """Create a new Chroma collection with configurable HNSW parameters.
+    """Create a new Chroma collection with configurable embedding functions.
     
     Args:
         collection_name: Name of the collection to create
         embedding_function_name: Name of the embedding function to use. Options: 'default', 'cohere', 'openai', 'jina', 'voyageai', 'ollama', 'roboflow'
+        embedding_function_config: Optional configuration dict for the embedding function. 
+            For ollama: {"url": "http://localhost:11434", "model_name": "chroma/all-minilm-l6-v2-f32", "timeout": 60}
+            For openai: {"api_key": "your-api-key", "model": "text-embedding-ada-002"}
+            For other functions, check their respective documentation.
         metadata: Optional metadata dict to add to the collection
     """
     client = get_chroma_client()
     
-    embedding_function = mcp_known_embedding_functions[embedding_function_name]
+    embedding_function_class = mcp_known_embedding_functions[embedding_function_name]
+    
+    # Create embedding function with configuration if provided
+    if embedding_function_config:
+        embedding_function = embedding_function_class(**embedding_function_config)
+    else:
+        embedding_function = embedding_function_class()
     
     configuration=CreateCollectionConfiguration(
-        embedding_function=embedding_function()
+        embedding_function=embedding_function
     )
     
     try:
@@ -244,9 +257,23 @@ async def chroma_get_collection_info(collection_name: str) -> Dict:
         # Peek at a few documents
         peek_results = collection.peek(limit=3)
         
+        # Get collection metadata and configuration info
+        collection_metadata = collection.metadata
+        
+        # Try to get embedding function info if available
+        embedding_function_info = {}
+        if hasattr(collection, '_embedding_function'):
+            ef = collection._embedding_function
+            embedding_function_info = {
+                "type": type(ef).__name__,
+                "config": getattr(ef, 'get_config', lambda: {})()
+            }
+        
         return {
             "name": collection_name,
             "count": count,
+            "metadata": collection_metadata,
+            "embedding_function": embedding_function_info,
             "sample_documents": peek_results
         }
     except Exception as e:
@@ -359,7 +386,7 @@ async def chroma_add_documents(
 
     client = get_chroma_client()
     try:
-        collection = client.get_or_create_collection(collection_name)
+        collection = client.get_collection(collection_name)
         
         # Check for duplicate IDs
         existing_ids = collection.get(include=[])["ids"]

@@ -169,3 +169,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# ChromaDB local database files
+chroma/
+*.sqlite3

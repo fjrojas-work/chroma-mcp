@@ -70,11 +70,60 @@ This is a MCP server for self-hosting your access to Chroma. If you are looking 
 - `chroma_delete_documents` - Delete specific documents from a collection
 
 ### Embedding Functions
-Chroma MCP supports several embedding functions: `default`, `cohere`, `openai`, `jina`, `voyageai`, and `roboflow`.
+Chroma MCP supports several embedding functions: `default`, `cohere`, `openai`, `jina`, `voyageai`, `ollama`, and `roboflow`.
 
 The embedding functions utilize Chroma's collection configuration, which persists the selected embedding function of a collection for retrieval. Once a collection is created using the collection configuration, on retrieval for future queries and inserts, the same embedding function will be used, without needing to specify the embedding function again. Embedding function persistance was added in v1.0.0 of Chroma, so if you created a collection using version <=0.6.3, this feature is not supported.
 
 When accessing embedding functions that utilize external APIs, please be sure to add the environment variable for the API key with the correct format, found in [Embedding Function Environment Variables](#embedding-function-environment-variables)
+
+#### Configuring Embedding Functions
+
+You can configure embedding functions by passing an `embedding_function_config` parameter when creating collections. This allows you to customize parameters like API endpoints, model names, and timeouts.
+
+**Ollama Configuration Example:**
+```python
+# Basic usage (uses defaults)
+chroma_create_collection(
+    collection_name="my_collection",
+    embedding_function_name="ollama"
+)
+
+# Custom configuration
+chroma_create_collection(
+    collection_name="my_collection",
+    embedding_function_name="ollama",
+    embedding_function_config={
+        "url": "http://localhost:11434",      # Ollama server URL
+        "model_name": "nomic-embed-text",     # Specific model
+        "timeout": 120                        # Timeout in seconds
+    }
+)
+
+# Remote Ollama server
+chroma_create_collection(
+    collection_name="my_collection",
+    embedding_function_name="ollama",
+    embedding_function_config={
+        "url": "http://192.168.1.100:11434",
+        "model_name": "mxbai-embed-large",
+        "timeout": 60
+    }
+)
+```
+
+**Popular Ollama Embedding Models:**
+- `nomic-embed-text` - Good general-purpose embedding model
+- `mxbai-embed-large` - High-quality embeddings for better accuracy  
+- `all-minilm` - Lightweight and fast
+- `chroma/all-minilm-l6-v2-f32` - Default model
+
+#### Important Notes
+
+**Embedding Function Persistence**: Once a collection is created with a specific embedding function configuration, that configuration is automatically used for all subsequent operations (adding documents, querying, etc.). You don't need to specify the embedding function again when adding documents to an existing collection.
+
+**Collection Creation vs Document Addition**:
+- `chroma_create_collection` - Creates a new collection with specified embedding configuration
+- `chroma_add_documents` - Adds documents to an existing collection (uses the collection's configured embedding function automatically)
 
 ## Usage with Claude Desktop
 
@@ -187,3 +236,42 @@ export CHROMA_DOTENV_PATH="/path/to/your/.env"
 When using external embedding functions that access an API key, follow the naming convention
 `CHROMA_<>_API_KEY="<key>"`.
 So to set a Cohere API key, set the environment variable `CHROMA_COHERE_API_KEY=""`. We recommend adding this to a .env file somewhere and using the `CHROMA_DOTENV_PATH` environment variable or `--dotenv-path` flag to set that location for safekeeping.
+
+## Testing
+
+The `tests/` directory contains comprehensive tests to verify the functionality of Chroma MCP Server with different configurations.
+
+### Test Remote Ollama Configuration
+
+To verify that your remote Ollama setup works correctly:
+
+```bash
+python tests/test_remote_ollama.py
+```
+
+This test demonstrates:
+- ✅ Connectivity with remote Ollama server
+- ✅ Collection creation with custom embedding configuration
+- ✅ Document addition using remote embeddings
+- ✅ Semantic search queries with correct results
+
+Before running, configure your Ollama server details in the test file:
+```python
+OLLAMA_URL = "http://192.168.1.32:11434"  # Your Ollama server
+MODEL_NAME = "nomic-embed-text"            # Your embedding model
+```
+
+### Prerequisites for Testing
+
+1. Ensure Ollama is running and accessible
+2. Install required embedding models:
+   ```bash
+   ollama pull nomic-embed-text
+   ollama pull mxbai-embed-large
+   ```
+3. Verify connectivity:
+   ```bash
+   curl http://your-ollama-server:11434/api/tags
+   ```
+
+See `tests/README.md` for more testing options and configuration details.
