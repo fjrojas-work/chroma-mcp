@@ -202,7 +202,10 @@ async def chroma_create_collection(
     
     # Create embedding function with configuration if provided
     if embedding_function_config:
-        embedding_function = embedding_function_class(**embedding_function_config)
+        # Remove non-constructor parameters from config
+        clean_config = {k: v for k, v in embedding_function_config.items() 
+                       if k not in ['embedding_function']}
+        embedding_function = embedding_function_class(**clean_config)
     else:
         embedding_function = embedding_function_class()
     

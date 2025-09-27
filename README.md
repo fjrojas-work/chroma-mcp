@@ -104,7 +104,7 @@ chroma_create_collection(
     collection_name="my_collection",
     embedding_function_name="ollama",
     embedding_function_config={
-        "url": "http://192.168.1.100:11434",
+        "url": "http://localhost:11434",  # Default local Ollama
         "model_name": "mxbai-embed-large",
         "timeout": 60
     }
@@ -116,6 +116,36 @@ chroma_create_collection(
 - `mxbai-embed-large` - High-quality embeddings for better accuracy  
 - `all-minilm` - Lightweight and fast
 - `chroma/all-minilm-l6-v2-f32` - Default model
+
+#### Ollama Server Configuration
+
+You can configure your Ollama server URL in several ways:
+
+1. **Direct in code:**
+```python
+embedding_function_config={
+    "url": "http://your-server:11434",  # Replace with your server
+    "model_name": "nomic-embed-text"
+}
+```
+
+2. **Environment variables:**
+```bash
+export OLLAMA_HOST="your-server:11434"
+```
+
+3. **Common configurations:**
+- Local: `http://localhost:11434`
+- Docker: `http://ollama:11434` 
+- Remote server: `http://your-server-ip:11434`
+- Custom port: `http://localhost:8080`
+
+4. **Configuration template:**
+Copy `.env.template` to `.env` and customize:
+```bash
+cp .env.template .env
+# Edit .env with your settings
+```
 
 #### Important Notes
 
@@ -257,7 +287,7 @@ This test demonstrates:
 
 Before running, configure your Ollama server details in the test file:
 ```python
-OLLAMA_URL = "http://192.168.1.32:11434"  # Your Ollama server
+OLLAMA_URL = "http://localhost:11434"      # Change to your Ollama server
 MODEL_NAME = "nomic-embed-text"            # Your embedding model
 ```
 
@@ -275,3 +305,54 @@ MODEL_NAME = "nomic-embed-text"            # Your embedding model
    ```
 
 See `tests/README.md` for more testing options and configuration details.
+
+## MCP Client Compatibility
+
+### Embedding Functions and Client Compatibility
+
+**Question**: Can MCP clients access and use embeddings stored in ChromaDB collections created with custom embedding function parameters?
+
+**Answer**: ✅ **YES, COMPLETELY COMPATIBLE**
+
+MCP clients can seamlessly access collections created with custom embedding functions (like Ollama, Cohere, OpenAI, etc.). The compatibility is automatic and transparent:
+
+- ✅ **Read existing documents and embeddings**: Stored embeddings are directly accessible
+- ✅ **Perform semantic searches**: Uses the configured embedding function automatically  
+- ✅ **Add new documents**: New embeddings generated with same function
+- ✅ **All CRUD operations**: Complete MCP operation support
+- ✅ **Multi-client access**: Multiple MCP clients can use the same collection
+- ✅ **Persistent configuration**: Embedding function settings survive restarts
+
+### How It Works
+
+When you create a collection with custom embedding configuration:
+
+```python
+await chroma_create_collection(
+    collection_name="my_collection",
+    embedding_function_config={
+        "embedding_function": "ollama",
+        "model_name": "nomic-embed-text", 
+        "url": "http://your-ollama-server:11434"
+    }
+)
+```
+
+ChromaDB automatically:
+1. **Persists** the embedding function configuration
+2. **Reconstructs** the embedding function when accessed
+3. **Maintains** consistency across all MCP operations
+
+### Compatibility Testing
+
+Verify compatibility in your environment:
+
+```bash
+# Create test collection with custom embedding function
+python tests/test_remote_ollama.py
+
+# Verify MCP client compatibility
+python tests/demo_mcp_compatibility.py
+```
+
+For detailed compatibility information, see [`docs/MCP_COMPATIBILITY.md`](docs/MCP_COMPATIBILITY.md).

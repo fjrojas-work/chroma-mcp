@@ -14,9 +14,17 @@ Complete functionality test with Ollama on remote server. This test demonstrates
 - ✅ Queries return semantically correct results
 
 **Configuration:**
+Configure your Ollama server connection by setting environment variables or editing the test files:
+
 ```python
-OLLAMA_URL = "http://192.168.1.32:11434"  # Change to your server
+OLLAMA_URL = "http://localhost:11434"      # Change to your server
 MODEL_NAME = "nomic-embed-text"            # Change to your model
+```
+
+**Environment Variables (recommended):**
+```bash
+export OLLAMA_URL="http://your-server:11434"
+export OLLAMA_MODEL="nomic-embed-text"
 ```
 
 **Run:**
@@ -59,5 +67,10 @@ Before running the tests, verify connectivity:
 curl http://localhost:11434/api/tags
 
 # For remote server  
-curl http://192.168.1.32:11434/api/tags
+3. **Test connectivity:**
+   ```bash
+   curl http://localhost:11434/api/tags
+   # or for remote server:
+   curl http://your-server:11434/api/tags
+   ```
 ```
